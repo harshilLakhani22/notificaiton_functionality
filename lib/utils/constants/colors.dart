@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 
 class MColors {
 
+
+  static const Color buttonPrimary = Color(0xff00712D);
+  static const Color buttonSecondary = black;
+
+
   // Neutral Shades
   static const Color black = Color(0xFF232323);
   static const Color darkerGrey = Color(0XFF4F4F4F);

@@ -1,12 +1,29 @@
 import 'dart:isolate';
 import 'dart:ui';
-
 import 'package:flutter_notification_listener/flutter_notification_listener.dart';
 import 'package:get/get.dart';
-import 'package:notification_functionality/features/home/models/text_notification_model.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:notification_functionality/features/facebook/screens/facebook_screen.dart';
+import 'package:notification_functionality/features/dashboard/models/text_notification_model.dart';
+import 'package:notification_functionality/features/instagram/screens/instagram_screen.dart';
+import 'package:notification_functionality/features/whatsapp/controller/whatsapp_controller.dart';
+import 'package:notification_functionality/features/whatsapp/screens/whatsapp_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class HomeController extends GetxController {
+class DashboardController extends GetxController {
+  RxInt currIndex = 0.obs;
+
+  void changeTabIndex(int index) {
+    currIndex.value = index;
+  }
+
+  final screens = [
+    WhatsappScreen(),
+    InstagramScreen(),
+    FacebookScreen(),
+  ];
+
+  /// HomeScreen Controller
   final RxList<TextNotificationModel> notifications = <TextNotificationModel>[].obs;
   final RxBool isListening = false.obs;
 
@@ -65,6 +82,7 @@ class HomeController extends GetxController {
   void startListening() {
     _startListening();
   }
+
   void _startListening() async {
     if (isListening.value) return;
 
@@ -99,17 +117,25 @@ class HomeController extends GetxController {
         timestamp: DateTime.now(),
       );
 
-      // Check for duplicates before adding
       if (!notifications.any((n) =>
       n.title == newNotification.title &&
           n.text == newNotification.text &&
           n.appName == newNotification.appName)) {
         notifications.add(newNotification);
+
+        // Save notifications in local storage
+        final GetStorage storage = GetStorage();
+        storage.write('allNotifications', notifications.map((n) => n.toJson()).toList());
+
+        // Trigger filtering in WhatsappController
+        final WhatsappController whatsappController = Get.find<WhatsappController>();
+        whatsappController.filterWhatsappNotifications([newNotification]);
       }
     }
   }
 
-  @pragma('vm:entry-point') // prevent dart from stripping out this function on release build in Flutter 3.x
+  @pragma(
+      'vm:entry-point') // prevent dart from stripping out this function on release build in Flutter 3.x
   static void _callback(NotificationEvent event) {
     final SendPort? sendPort = IsolateNameServer.lookupPortByName("_listener_");
     sendPort?.send(event);
